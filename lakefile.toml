@@ -1,0 +1,11 @@
+name = "char_p_nahodge_formalization"
+version = "0.1.0"
+defaultTargets = ["LSZ"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "79d0395a1825a6264ad5d269e35e60537518955e"
+
+[[lean_lib]]
+name = "LSZ"
