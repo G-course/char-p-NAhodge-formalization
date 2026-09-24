@@ -2,11 +2,11 @@
 
 This repository is a work-in-progress Lean 4 formalization of foundations
 for the Ogus--Vologodsky and Lan--Sheng--Zuo constructions in positive
-characteristic.  It uses mathlib's categories of schemes, ringed spaces,
-and sheaves of modules.
+characteristic. It uses mathlib's categories of schemes, ringed spaces, and
+sheaves of modules.
 
 The repository does **not** currently claim a complete formalization of the
-Ogus--Vologodsky equivalence.  The results already proved, and the precise
+Ogus--Vologodsky equivalence. The results already proved, and the precise
 boundary between proved constructions and conditional interfaces, are
 listed below.
 
@@ -18,11 +18,11 @@ The tensor product and internal Hom of sheaves of modules are constructed
 as independent foundations, together with the tensor--Hom adjunction
 
 $$
-\operatorname{Hom}_{\mathcal O_X}
+\mathrm{Hom}_{\mathcal O_X}
   (M\otimes_{\mathcal O_X}N,P)
 \cong
-\operatorname{Hom}_{\mathcal O_X}
-  \left(M,\underline{\operatorname{Hom}}_{\mathcal O_X}(N,P)\right).
+\mathrm{Hom}_{\mathcal O_X}
+  \left(M,\underline{\mathrm{Hom}}_{\mathcal O_X}(N,P)\right).
 $$
 
 | Result | Lean entry |
@@ -38,11 +38,11 @@ $$
 The affine internal-Hom result is the precise formula
 
 $$
-\Gamma\!\left(\operatorname{Spec}R,
-  \underline{\operatorname{Hom}}(\widetilde N,P)\right)
+\Gamma\!\left(\mathrm{Spec}R,
+  \underline{\mathrm{Hom}}(\widetilde N,P)\right)
 \cong
-\operatorname{Hom}_R
-  \left(N,\Gamma(\operatorname{Spec}R,P)\right).
+\mathrm{Hom}_R
+  \left(N,\Gamma(\mathrm{Spec}R,P)\right).
 $$
 
 No claim is made that internal Hom is quasicoherent in general; that is not
@@ -107,8 +107,22 @@ differential-algebra foundation.
 | Absolute Frobenius of a characteristic-$p$ scheme | `AlgebraicGeometry.Scheme.absoluteFrobenius` |
 | Absolute Frobenius is affine | `AlgebraicGeometry.Scheme.absoluteFrobenius_isAffineHom` |
 | The map on functions over an open is $a\mapsto a^p$ | `AlgebraicGeometry.Scheme.absoluteFrobenius_app_apply` |
+| A smooth $W_2(k)$-lift with its actual special-fibre identification | `SmoothScheme.W₂Lift` |
+| A geometric Frobenius lift reducing to absolute Frobenius | `SmoothScheme.FrobeniusLift` |
+| The induced special-fibre morphism, constructed by the pullback universal property | `SmoothScheme.FrobeniusLift.specialFiberMap` |
+| A lifted Frobenius fixes the underlying topological space | `SmoothScheme.FrobeniusLift.liftFrob_apply` |
+| Same-open endomorphism of the lifted structure presheaf | `SmoothScheme.FrobeniusLift.presheafEnd` |
+| The special fibre and its $W_2(k)$-lift have homeomorphic underlying spaces | `SmoothScheme.W₂Lift.specialFiberHomeomorph` |
+| Affine opens of the lift induce an affine cover of $X$ | `SmoothScheme.W₂Lift.affineOpen_cover` |
+| Smooth affine $W_2(k)$-algebras extracted from the lift | `SmoothScheme.FrobeniusLift.affineRing`, `affineSmooth` |
+| Frobenius maps on those affine algebras are Witt-Frobenius semilinear | `SmoothScheme.FrobeniusLift.affineMap_base` |
 | Affine-local Frobenius-twist formula for Frobenius pullback | `FrobeniusPullback.restrictedTopIso` |
+| Absolute-Frobenius pullback preserves quasicoherence | `FrobeniusPullback.carrier_isQuasicoherent` |
+| Objectwise Frobenius extension followed by sheafification equals mathlib pullback | `SmoothScheme.directFrobeniusPullbackIso` |
 | Canonical flat connection on Frobenius extension of scalars | `StandardFrobeniusPullback.canonicalConnection` |
+| Restriction-compatible canonical derivative on the direct Frobenius-pullback presheaf | `SmoothScheme.directCanonicalNablaAdd_naturality` |
+| Sheafified canonical derivative, with scalar-linearity, Leibniz, and flatness | `SmoothScheme.directCanonicalSheafNabla`, `directCanonicalSheafNabla_smul_vectorField`, `directCanonicalSheafNabla_leibniz`, `directCanonicalSheafNabla_flat` |
+| Bundled quasicoherent module with its canonical flat connection | `SmoothScheme.directCanonicalConnection` |
 | Sectionwise linear $p$-curvature and its sheaf-morphism forms | `pCurvature`, `pCurvatureEndomorphismOn`, `pCurvatureEndomorphism` |
 | Additivity in the vector field | `pCurvature_add_vectorField` |
 | Frobenius semilinearity $\psi(aD)=a^p\psi(D)$ | `pCurvature_smul_vectorField` |
@@ -121,12 +135,109 @@ For fixed $D$, `pCurvature` is linear in module sections.
 $\mathcal O_U$-linear morphism over an arbitrary open $U$;
 `pCurvatureEndomorphism` is its global-vector-field version.
 
+`StandardFrobeniusPullback` works directly on mathlib's
+`ModuleCat.extendScalars (algebraFrobenius k A p)`.  The canonical
+connection is constructed from the tensor-product universal property on
+that object; there is no second Frobenius-pullback tensor model and no
+comparison isomorphism used to transport the connection.
+
+For a smooth scheme, `directFrobeniusPullbackPresheaf` applies this same
+mathlib extension-of-scalars object on every open.  Its sheafification is
+naturally isomorphic to `Scheme.Modules.pullback` by
+`directFrobeniusPullbackIso`.  The canonical derivative is defined on this
+direct presentation and is proved compatible with restriction before
+sheafification.  It then descends to `directCanonicalSheafNabla`; its
+scalar-linearity in vector fields, Leibniz identity, and flatness are proved
+on the resulting sheaf, and `directCanonicalConnection` packages the
+quasicoherent Frobenius pullback with this connection.
+
 ### 4. Current state of the LSZ construction
 
-#### Verified algebraic components
+#### Genuine affine Frobenius-lift construction
 
-- The LSZ word-nilpotence convention: every word of length $p$ in tangent
-  contractions acts by zero.
+Fix a perfect field $k$ of characteristic $p$, a smooth $W_2(k)$-algebra
+$B$, and a Frobenius lift $\Phi:B\to B$. Write
+
+$$
+A=k\otimes_{W_2(k)}B.
+$$
+
+The repository now constructs the divided differential and its dual from
+$\Phi$ itself; they are not additional inputs. For every unrestricted
+integrable Higgs module on $A$, it then constructs
+
+$$
+\nabla=\nabla^{\mathrm{can}}+F^*\theta\circ\zeta
+$$
+
+as an integrable connection and packages the construction as a functor.
+
+| Result | Lean entry |
+| --- | --- |
+| Divided differential on the special fibre from the actual lift | `AffineWittLift.Frobenius.specialFiberDividedDifferential` |
+| Dual divided Frobenius $\zeta:T_A\to F_A^*T_A$ | `AffineWittLift.Frobenius.dividedFrobeniusZeta` |
+| Closedness of $\zeta$ | `AffineWittLift.Frobenius.dividedFrobeniusZeta_closed` |
+| Packaged divided-differential datum | `AffineWittLift.Frobenius.dividedDifferentialData` |
+| Resulting integrable connection | `AffineWittLift.Frobenius.connection` |
+| Resulting affine LSZ functor | `AffineWittLift.Frobenius.functor` |
+| Strongly nilpotent Higgs and flat categories | `AffineObject.NilpotentHiggs`, `AffineObject.NilpotentFlat` |
+| LSZ functor between the strongly nilpotent categories | `AffineWittLift.Frobenius.nilpotentFunctor` |
+| Underlying module is Frobenius extension of scalars | `AffineWittLift.Frobenius.connection_carrier` |
+| Frobenius extension preserves finite generation and projectivity | `AffineFrobeniusLift.pullback_finite`, `AffineFrobeniusLift.pullback_projective` |
+| Explicit connection formula | `AffineWittLift.Frobenius.connection_nabla_apply` |
+| Comparison with the general affine p-curvature construction | `AffineWittLift.Frobenius.pCurvature_eq_affine` |
+
+The same affine input is also compared with the geometric lifting data; the
+special-fibre morphism is constructed and its reduction to absolute
+Frobenius is proved rather than assumed:
+
+| Result | Lean entry |
+| --- | --- |
+| Smooth affine special fibre $\mathrm{Spec}(k\otimes_{W_2(k)}B)$ | `AffineWittLift.specialFiberSmoothScheme` |
+| Its geometric $W_2(k)$-lift | `AffineWittLift.toSchemeW₂Lift` |
+| Explicit map on the pullback special fibre | `AffineWittLift.Frobenius.specialFiberMap` |
+| Comparison with the tensor-product $p$-power Frobenius | `AffineWittLift.Frobenius.pullbackSpecIso_conjugation` |
+| Reduction is the absolute Frobenius | `AffineWittLift.Frobenius.specialFiberMap_reduction` |
+| Resulting genuine scheme-theoretic Frobenius lift | `AffineWittLift.Frobenius.toSchemeFrobeniusLift` |
+
+The nilpotence convention is the strong LSZ convention: every composite of
+$p$ arbitrary Higgs contractions vanishes. This property is proved to
+survive Frobenius extension of scalars for arbitrary pulled tangent vectors:
+
+| Result | Lean entry |
+| --- | --- |
+| Strong nilpotence of the full pulled Higgs action | `AffineFrobeniusLift.pulledAction_wordNilpotent` |
+| P-curvature as the Higgs action on the Cartier defect | `AffineFrobeniusLift.pCurvature_eq_pulledAction_cartierDefect` |
+| Strong nilpotence of p-curvature for any divided differential | `AffineFrobeniusLift.pCurvature_wordNilpotent` |
+| Strong nilpotence for the connection from the actual lift | `AffineWittLift.Frobenius.pCurvature_wordNilpotent` |
+
+Thus the last theorem states that every word of length $p$ in arbitrary
+p-curvature contractions of the constructed connection is zero. The proof
+does not replace this condition by the weaker assertion $\psi(D)^p=0$ for
+one fixed vector field.
+
+Finite-projective duals under base change, needed to transpose the divided
+cotangent map, are handled by `FiniteProjectiveDualBaseChange.equiv`.
+
+For a genuine geometric $W_2(k)$-lift, no affine covering is supplied as
+extra input.  The special-fibre projection is proved to be a surjective
+closed immersion, hence a homeomorphism.  The affine opens of the lift
+therefore induce the canonical affine cover
+`SmoothScheme.W₂Lift.affineOpen_cover` of $X$.  On each such open,
+`SmoothScheme.FrobeniusLift.affineRing` is proved to be a smooth
+$W_2(k)$-algebra, and the same-open map induced by the lifted Frobenius is
+proved semilinear for Witt Frobenius by
+`SmoothScheme.FrobeniusLift.affineMap_base`.
+
+On an arbitrary smooth separated positive-characteristic scheme, the
+strong word-nilpotent object categories themselves use the canonical
+vector fields constructed from the scheme:
+`SmoothScheme.NilpotentHiggs` and `SmoothScheme.NilpotentFlat`.  In
+particular, these definitions do not ask the caller to provide a tangent
+sheaf or a restricted-power operation.
+
+#### Other verified algebraic components
+
 - Joint nilpotence consequences used by truncated exponentials:
   `IsWordNilpotent.linear_joint`.
 - The truncated-exponential addition formula:
@@ -134,41 +245,46 @@ $\mathcal O_U$-linear morphism over an arbitrary open $U$;
 - Inverse identities and the resulting linear automorphism:
   `TruncatedExp.exp_mul_exp_neg_eq_one` and
   `TruncatedExp.moduleEndLinearEquiv`.
-- The canonical connection on Frobenius pullback:
-  `StandardFrobeniusPullback.canonicalConnection`.
-- Once the divided-Frobenius identities are supplied, the LSZ correction
-  term satisfies the restriction, Leibniz, flatness, and naturality
-  calculations and produces an integrable connection:
+- The conditional global formula produces an integrable connection once
+  scheme-level divided-Frobenius data is supplied:
   `GlobalDividedFrobeniusData.connection`.
-- The corresponding unrestricted functor is packaged as
+- The corresponding conditional unrestricted functor is
   `GlobalFrobeniusLift.globalLSZFunctor`.
 
-#### Conditional interfaces
+#### Conditional global and descent interfaces
 
 - `Atlas.DescentData.lszFunctor` produces the cover-dependent LSZ functor
   once complete descent data is supplied.
 - `Atlas.ComparisonData.natIso` and
   `Atlas.ComparisonData.lszFunctor_choice_independent` prove that supplied
-  local comparison identities yield a natural isomorphism between the two
+  local comparison identities yield a natural isomorphism between two
   cover-dependent functors.
-- The repository does not yet construct all `DescentData` and
-  `ComparisonData` automatically from one $W_2(k)$-lifting and chosen local
-  Frobenius liftings.
+- The genuine construction above is currently affine. The repository does
+  not yet prove the remaining special-fibre comparison and localization
+  compatibilities needed to glue the newly extracted affine maps into a
+  scheme-level LSZ functor. It also does not yet construct all
+  `GlobalDividedFrobeniusData`, `DescentData`, and `ComparisonData`
+  automatically from one $W_2(k)$-lift and chosen local Frobenius liftings.
 - An inverse functor and the complete LSZ/Ogus--Vologodsky equivalence have
   not yet been formalized.
 
 ## Source layout
 
-All Lean modules live under `LSZ/`.  The main groups are:
+All Lean modules live under `LSZ/`. The main groups are:
 
 - tensor products, internal Hom, and ringed spaces: `SheafTensor`,
   `SheafInternalHom`, `FilteredColimitTensor`, `InverseImage*`,
   `PullbackPresheaf*`, `SheafificationTensor`, and `RingedSpacePullback`;
 - schemes and Frobenius: `SchemeTensor`, `SchemeObjects`,
-  `AbsoluteFrobenius`, and `FrobeniusPullback`;
+  `AbsoluteFrobenius`, `FrobeniusPullback`, `DirectFrobeniusPullback`,
+  `GeometricWittLift`, and `GeometricFrobeniusLift`;
 - characteristic-$p$ differential geometry: `Geometry`, `VectorFields`,
-  `TangentSheaf`, `PCurvature`, and `RestrictedIdentities`;
-- LSZ construction and descent: `WittLift`, `AffineFrobenius`,
+  `TangentSheaf`, `PCurvature`, `GeometricCanonicalConnection`,
+  `GeometricNilpotentObjects`, and `RestrictedIdentities`;
+- genuine affine Frobenius-lift construction and its geometric comparison:
+  `AffineWittLift`, `GeometricWittLift`, `AffineWittScheme`,
+  `FiniteProjectiveDualBaseChange`, and `AffineWittLSZ`;
+- LSZ global and descent interfaces: `WittLift`, `AffineFrobenius`,
   `GlobalFunctor`, `CoverFunctor`, `Gauge`, and `ChoiceIndependence`.
 
 `LSZ.lean` is the public aggregate import.
@@ -188,9 +304,9 @@ fixed in `lakefile.toml` and `lake-manifest.json`.
 
 ## Verification policy
 
-The source compiles without `sorry`, `admit`, or additional axioms.  GitHub
+The source compiles without `sorry`, `admit`, or additional axioms. GitHub
 Actions runs `lake build` on every push and pull request.
 
 ## License
 
-Licensed under the Apache License, Version 2.0.  See `LICENSE`.
+Licensed under the Apache License, Version 2.0. See `LICENSE`.

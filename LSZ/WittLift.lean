@@ -2,6 +2,8 @@ import LSZ.SchemeObjects
 import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 import Mathlib.AlgebraicGeometry.Pullbacks
 import Mathlib.FieldTheory.Perfect
+import Mathlib.RingTheory.WittVector.Identities
+import Mathlib.RingTheory.WittVector.Teichmuller
 import Mathlib.RingTheory.WittVector.Truncated
 
 /-!
@@ -101,6 +103,83 @@ omit [CharP k p] in
 lemma w₂Reduction_apply (x : W₂ p k) : w₂Reduction p k x = x.coeff ⟨0, by omega⟩ := by
   obtain ⟨x, rfl⟩ := WittVector.truncate_surjective (p := p) 2 k x
   simp
+
+/-- The distinguished element `p` is square-zero in the length-two Witt
+ring. -/
+lemma w₂_p_sq : (p : W₂ p k) ^ 2 = 0 := by
+  have htrunc : (p : W₂ p k) ^ 2 =
+      WittVector.truncate 2 ((p : WittVector p k) ^ 2) := by
+    rw [map_pow, map_natCast]
+  rw [htrunc]
+  apply TruncatedWittVector.ext
+  intro i
+  rw [WittVector.coeff_truncate, TruncatedWittVector.coeff_zero,
+    WittVector.coeff_p_pow_eq_zero]
+  omega
+
+omit [CharP k p] in
+/-- Every element of `k` has a Teichmüller lift to `W₂(k)`. -/
+lemma w₂Reduction_surjective : Function.Surjective (w₂Reduction p k) := by
+  intro a
+  refine ⟨WittVector.truncate 2 (WittVector.teichmuller p a), ?_⟩
+  simp
+
+/-- Every multiple of `p` reduces to zero. -/
+lemma w₂Reduction_mul_p (x : W₂ p k) :
+    w₂Reduction p k (x * p) = 0 := by
+  rw [map_mul, map_natCast, CharP.cast_eq_zero, mul_zero]
+
+/-- Over a perfect field, the kernel of `W₂(k) → k` consists exactly of
+multiples of `p`.  This is the length-two Witt-vector form of division by
+`p` used in the divided Frobenius differential. -/
+lemma w₂Reduction_eq_zero_iff_exists_mul_p [PerfectField k] (x : W₂ p k) :
+    w₂Reduction p k x = 0 ↔ ∃ y : W₂ p k, x = y * p := by
+  constructor
+  · intro hx
+    obtain ⟨x, rfl⟩ := WittVector.truncate_surjective (p := p) 2 k x
+    let r : k := (powMulEquiv k p).symm (x.coeff 1)
+    refine ⟨WittVector.truncate 2 (WittVector.teichmuller p r), ?_⟩
+    have hx0 : x.coeff 0 = 0 := by
+      simpa using hx
+    have hmul :
+        WittVector.truncate 2 (WittVector.teichmuller p r) * (p : W₂ p k) =
+          WittVector.truncate 2
+            (WittVector.teichmuller p r * (p : WittVector p k)) := by
+      rw [map_mul, map_natCast]
+    apply TruncatedWittVector.ext
+    intro i
+    rw [hmul, WittVector.coeff_truncate, WittVector.coeff_truncate]
+    fin_cases i
+    · rw [WittVector.mul_charP_coeff_zero]
+      exact hx0
+    · rw [WittVector.mul_charP_coeff_succ,
+        WittVector.teichmuller_coeff_zero]
+      simpa [r] using (powMulEquiv_symm_pow_p k p (x.coeff 1)).symm
+  · rintro ⟨y, rfl⟩
+    exact w₂Reduction_mul_p p k y
+
+/-- In `W₂(k)`, an element annihilates `p` exactly when it belongs to the
+special-fibre ideal. -/
+lemma w₂_mul_p_eq_zero_iff_reduction_eq_zero [PerfectField k] (x : W₂ p k) :
+    x * p = 0 ↔ w₂Reduction p k x = 0 := by
+  constructor
+  · intro hx
+    obtain ⟨x, rfl⟩ := WittVector.truncate_surjective (p := p) 2 k x
+    have hmul :
+        WittVector.truncate 2 x * (p : W₂ p k) =
+          WittVector.truncate 2 (x * (p : WittVector p k)) := by
+      rw [map_mul, map_natCast]
+    have hcoeff := congrArg
+      (fun y : W₂ p k => y.coeff ⟨1, by omega⟩) hx
+    rw [hmul, WittVector.coeff_truncate,
+      WittVector.mul_charP_coeff_succ,
+      TruncatedWittVector.coeff_zero] at hcoeff
+    have hx0 : x.coeff 0 = 0 := eq_zero_of_pow_eq_zero hcoeff
+    exact hx0
+  · intro hx
+    obtain ⟨y, hy⟩ :=
+      (w₂Reduction_eq_zero_iff_exists_mul_p p k x).mp hx
+    rw [hy, mul_assoc, ← pow_two, w₂_p_sq, mul_zero]
 
 /-- The canonical Witt Frobenius on `W₂(k)`. -/
 noncomputable def w₂Frobenius : W₂ p k →+* W₂ p k :=

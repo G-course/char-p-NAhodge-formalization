@@ -492,6 +492,31 @@ noncomputable def directSheafificationAdjunction (B : Sheaf J CommRingCat.{u}) :
         PresheafOfModules.restrictScalars (directRingMap B) :=
   PresheafOfModules.sheafificationAdjunction (directRingMap B)
 
+/-- The module-linear unit from a presheaf of modules to its direct
+sheafification.  Its underlying additive-presheaf map is mathlib's
+`CategoryTheory.toSheafify`. -/
+noncomputable def directSheafificationUnit (B : Sheaf J CommRingCat.{u})
+    (P : PresheafOfModules (B.obj ⋙ forget₂ CommRingCat RingCat)) :
+    P ⟶ ((directSheafificationFunctor B).obj P).val :=
+  (directSheafificationAdjunction B).unit.app P ≫
+    unrestrictId B ((directSheafificationFunctor B).obj P).val
+
+@[simp]
+lemma directSheafificationUnit_app_apply
+    (B : Sheaf J CommRingCat.{u})
+    (P : PresheafOfModules (B.obj ⋙ forget₂ CommRingCat RingCat))
+    (U : Cᵒᵖ) (x : P.obj U) :
+    (directSheafificationUnit B P).app U x =
+      (CategoryTheory.toSheafify J P.presheaf).app U x := rfl
+
+lemma directSheafificationUnit_map_smul
+    (B : Sheaf J CommRingCat.{u})
+    (P : PresheafOfModules (B.obj ⋙ forget₂ CommRingCat RingCat))
+    (U : Cᵒᵖ) (a : B.obj.obj U) (x : P.obj U) :
+    (directSheafificationUnit B P).app U (a • x) =
+      a • (directSheafificationUnit B P).app U x :=
+  map_smul ((directSheafificationUnit B P).app U).hom a x
+
 private noncomputable def directForgetFunctorObj
     (A : Sheaf J CommRingCat.{u}) (M : Modules A) :
     PresheafOfModules (A.obj ⋙ forget₂ CommRingCat RingCat) :=

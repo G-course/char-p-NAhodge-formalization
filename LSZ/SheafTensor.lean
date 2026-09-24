@@ -40,40 +40,14 @@ section
 /-- Rewrite a module presheaf over the canonical forgotten ring sheaf as a
 module presheaf over the visibly composed commutative-ring presheaf.  The
 underlying data is unchanged. -/
-noncomputable def directPresheaf (M : Modules R) :
-    PresheafOfModules (R.obj ⋙ forget₂ CommRingCat RingCat.{u}) := by
-  exact M.val
+abbrev directPresheaf (M : Modules R) :
+    PresheafOfModules (R.obj ⋙ forget₂ CommRingCat RingCat.{u}) :=
+  M.val
 
 /-- The same identity rewrite on morphisms. -/
 noncomputable def directHom {M N : Modules R} (f : M ⟶ N) :
     directPresheaf R M ⟶ directPresheaf R N := by
   exact f.val
-
-/-- An identity conversion on sections into the visibly composed
-presheaf. -/
-def directSection (M : Modules R) (U : Cᵒᵖ) (m : M.val.obj U) :
-    (directPresheaf R M).obj U :=
-  m
-
-/-- Identity conversion of a scalar from the canonical forgotten ring
-sheaf to the visibly composed commutative-ring presheaf. -/
-def directScalar (U : Cᵒᵖ) (a : (ringSheaf R).obj.obj U) :
-    R.obj.obj U :=
-  a
-
-@[simp]
-lemma directSection_zero (M : Modules R) (U : Cᵒᵖ) :
-    directSection R M U 0 = 0 := rfl
-
-lemma directSection_add (M : Modules R) (U : Cᵒᵖ)
-    (m n : M.val.obj U) :
-    directSection R M U (m + n) =
-      directSection R M U m + directSection R M U n := rfl
-
-lemma directSection_smul (M : Modules R) (U : Cᵒᵖ)
-    (a : (ringSheaf R).obj.obj U) (m : M.val.obj U) :
-    directSection R M U (a • m) =
-      directScalar R U a • directSection R M U m := rfl
 
 /-- The objectwise tensor-product presheaf underlying the tensor product of
 module sheaves. -/
@@ -87,7 +61,7 @@ sheafification. -/
 def tensorPure (M N : Modules R) (U : Cᵒᵖ)
     (m : M.val.obj U) (n : N.val.obj U) :
     (tensorPresheaf R M N).obj U :=
-  directSection R M U m ⊗ₜ[R.obj.obj U] directSection R N U n
+  m ⊗ₜ[R.obj.obj U] n
 
 @[simp]
 lemma tensorPure_zero_left (M N : Modules R) (U : Cᵒᵖ)
@@ -105,36 +79,38 @@ lemma tensorPure_add_left (M N : Modules R) (U : Cᵒᵖ)
     (m m' : M.val.obj U) (n : N.val.obj U) :
     tensorPure R M N U (m + m') n =
       tensorPure R M N U m n + tensorPure R M N U m' n := by
-  simp only [tensorPure, directSection_add, TensorProduct.add_tmul]
+  simp only [tensorPure, TensorProduct.add_tmul]
   rfl
 
 lemma tensorPure_add_right (M N : Modules R) (U : Cᵒᵖ)
     (m : M.val.obj U) (n n' : N.val.obj U) :
     tensorPure R M N U m (n + n') =
       tensorPure R M N U m n + tensorPure R M N U m n' := by
-  simp only [tensorPure, directSection_add, TensorProduct.tmul_add]
+  simp only [tensorPure, TensorProduct.tmul_add]
   rfl
 
 lemma tensorPure_smul_left (M N : Modules R) (U : Cᵒᵖ)
     (a : (ringSheaf R).obj.obj U) (m : M.val.obj U) (n : N.val.obj U) :
     tensorPure R M N U (a • m) n = a • tensorPure R M N U m n := by
   unfold tensorPure
-  rw [directSection_smul]
-  change (directScalar R U a • directSection R M U m) ⊗ₜ[R.obj.obj U]
-      directSection R N U n =
-    directScalar R U a •
-      (directSection R M U m ⊗ₜ[R.obj.obj U] directSection R N U n)
+  change ((show R.obj.obj U from a) •
+      (show (directPresheaf R M).obj U from m)) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n) =
+    (show R.obj.obj U from a) •
+      ((show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n))
   rw [← TensorProduct.smul_tmul']
 
 lemma tensorPure_smul_right (M N : Modules R) (U : Cᵒᵖ)
     (a : (ringSheaf R).obj.obj U) (m : M.val.obj U) (n : N.val.obj U) :
     tensorPure R M N U m (a • n) = a • tensorPure R M N U m n := by
   unfold tensorPure
-  rw [directSection_smul]
-  change directSection R M U m ⊗ₜ[R.obj.obj U]
-      (directScalar R U a • directSection R N U n) =
-    directScalar R U a •
-      (directSection R M U m ⊗ₜ[R.obj.obj U] directSection R N U n)
+  change (show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+      ((show R.obj.obj U from a) •
+        (show (directPresheaf R N).obj U from n)) =
+    (show R.obj.obj U from a) •
+      ((show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n))
   rw [TensorProduct.tmul_smul]
 
 lemma map_tensorPure_add_left {P : PresheafOfModules (ringSheaf R).obj}
@@ -439,12 +415,13 @@ lemma smul_tmul (M N : Modules R) (U : Cᵒᵖ)
     (a : (ringSheaf R).obj.obj U) (m : M.val.obj U) (n : N.val.obj U) :
     tmul R M N U (a • m) n = a • tmul R M N U m n := by
   unfold tmul tensorPure
-  rw [directSection_smul]
   change ((tensorUnit R M N).app U).hom
-      ((directScalar R U a • directSection R M U m) ⊗ₜ[R.obj.obj U]
-        directSection R N U n) =
+      (((show R.obj.obj U from a) •
+          (show (directPresheaf R M).obj U from m)) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n)) =
     a • ((tensorUnit R M N).app U).hom
-      (directSection R M U m ⊗ₜ[R.obj.obj U] directSection R N U n)
+      ((show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n))
   rw [← TensorProduct.smul_tmul']
   exact map_smul ((tensorUnit R M N).app U).hom a _
 
@@ -452,12 +429,13 @@ lemma tmul_smul (M N : Modules R) (U : Cᵒᵖ)
     (a : (ringSheaf R).obj.obj U) (m : M.val.obj U) (n : N.val.obj U) :
     tmul R M N U m (a • n) = a • tmul R M N U m n := by
   unfold tmul tensorPure
-  rw [directSection_smul]
   change ((tensorUnit R M N).app U).hom
-      (directSection R M U m ⊗ₜ[R.obj.obj U]
-        (directScalar R U a • directSection R N U n)) =
+      ((show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+        ((show R.obj.obj U from a) •
+          (show (directPresheaf R N).obj U from n))) =
     a • ((tensorUnit R M N).app U).hom
-      (directSection R M U m ⊗ₜ[R.obj.obj U] directSection R N U n)
+      ((show (directPresheaf R M).obj U from m) ⊗ₜ[R.obj.obj U]
+        (show (directPresheaf R N).obj U from n))
   rw [TensorProduct.tmul_smul]
   exact map_smul ((tensorUnit R M N).app U).hom a _
 

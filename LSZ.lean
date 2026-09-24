@@ -1,15 +1,15 @@
-import LSZ.RingedSpacePullback
-import LSZ.SchemeTensor
+import LSZ.Geometry
+import LSZ.VectorFields
+import LSZ.GeometricObjects
 import LSZ.RestrictedIdentities
+import LSZ.GeometricNilpotentObjects
+import LSZ.GeometricWittLift
+import LSZ.GeometricFrobeniusLift
 import LSZ.StandardCanonicalConnection
-import LSZ.ConnectionTensor
-import LSZ.WordNilpotence
-import LSZ.ChoiceIndependence
-
-/-!
-# `LSZ`
-
-Public entry point for the characteristic-`p` nonabelian Hodge
-formalization.  The imports above are terminal modules of the current
-dependency graph, so `import LSZ` checks and exposes every public component.
--/
+import LSZ.DirectFrobeniusPullback
+import LSZ.GeometricCanonicalConnection
+import LSZ.AffineNilpotentLSZ
+import LSZ.AffineWittScheme
+import LSZ.AffineWittLSZ
+import LSZ.SheafExtensionTensor
+import LSZ.AffineSchemeComparison

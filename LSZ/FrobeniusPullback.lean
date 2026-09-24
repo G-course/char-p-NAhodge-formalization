@@ -137,6 +137,31 @@ namespace FrobeniusPullback
 variable {p : ℕ} [Fact p.Prime]
 variable (X : AlgebraicGeometry.Scheme.{u}) [IsCharacteristicP X p]
 
+private lemma isQuasicoherent_of_restrictPresentation
+    (M : X.Modules) {I : Type u} (U : I → X.Opens)
+    (hU : IsOpenCover U)
+    (pres : ∀ i, ((AlgebraicGeometry.Scheme.Modules.restrictFunctor
+      (U i).ι).obj M).Presentation) :
+    M.IsQuasicoherent := by
+  let localPres (i : I) : (M.over (U i)).Presentation := by
+    let E := AlgebraicGeometry.Scheme.Modules.overEquiv (U i)
+    let e := (AlgebraicGeometry.Scheme.Modules.overFunctorEquiv (U i)).app M
+    let q : (E.functor.obj (M.over (U i))).Presentation :=
+      @SheafOfModules.Presentation.ofIsIso _ _ _ _ _ _ _ _
+        e.inv e.isIso_inv (pres i)
+    let hPres : Limits.PreservesColimitsOfSize.{u, u} E.symm.functor :=
+      E.symm.toAdjunction.leftAdjoint_preservesColimits
+    let q' := @SheafOfModules.Presentation.map
+      _ _ _ _ _ _ _ _ _ _ _ _ _ q E.symm.functor hPres
+      ((U i).sheafOfModulesEquivOverInverseUnit X.ringCatSheaf).symm
+    let eu := E.unitIso.app (M.over (U i))
+    exact @SheafOfModules.Presentation.ofIsIso _ _ _ _ _ _ _ _
+      eu.inv eu.isIso_inv q'
+  letI (i : I) : (M.over (U i)).IsQuasicoherent :=
+    (localPres i).isQuasicoherent
+  exact SheafOfModules.IsQuasicoherent.of_coversTop M U
+    ((Opens.coversTop_iff X U).2 hU)
+
 /-- Frobenius pullback of an `𝒪_X`-module, using mathlib's module
 pullback functor. -/
 noncomputable abbrev carrier
@@ -269,6 +294,65 @@ noncomputable def restrictedTopIso (U : X.Opens)
       (AffinePullback.pullbackQuasicoherentTopIso
         ((AlgebraicGeometry.Scheme.absoluteFrobenius (p := p) X).app U)
         (chartModule X U hU F))
+
+/-- On the inverse image of an affine open, the Frobenius pullback has an
+explicit presentation obtained from its affine extension-of-scalars model. -/
+noncomputable def restrictedCarrierPresentation
+    (U : X.Opens) (hU : AlgebraicGeometry.IsAffineOpen U)
+    (F : X.Modules) [F.IsQuasicoherent] :
+    ((AlgebraicGeometry.Scheme.Modules.restrictFunctor
+      ((AlgebraicGeometry.Scheme.absoluteFrobenius (p := p) X) ⁻¹ᵁ U).ι).obj
+      (carrier (p := p) X F)).Presentation := by
+  let f := AlgebraicGeometry.Scheme.absoluteFrobenius (p := p) X
+  let hW := hU.preimage f
+  let Fchart := chartModule X U hU F
+  let T := (ModuleCat.extendScalars (f.app U).hom).obj
+    ((AlgebraicGeometry.moduleSpecΓFunctor (R := Γ(X, U))).obj Fchart)
+  let presT : (AlgebraicGeometry.tilde T).Presentation :=
+    AlgebraicGeometry.presentationTilde T .univ (by simp) _
+      (Submodule.span_eq _)
+  let ePullback := AffinePullback.pullbackQuasicoherentIso (f.app U) Fchart
+  let presPullback :=
+    @SheafOfModules.Presentation.ofIsIso _ _ _ _ _ _ _ _
+      ePullback.inv ePullback.isIso_inv presT
+  let eChart := chartedRestrictionIso (p := p) X U hU F
+  let presChart :=
+    @SheafOfModules.Presentation.ofIsIso _ _ _ _ _ _ _ _
+      eChart.inv eChart.isIso_inv presPullback
+  let presBack := AlgebraicGeometry.Scheme.Modules.presentationRestrict
+    hW.isoSpec.hom presChart
+  let eBack :
+      (AlgebraicGeometry.Scheme.Modules.restrictFunctor hW.isoSpec.hom).obj
+          (restrictedCarrierChart (p := p) X U hU F) ≅
+        (AlgebraicGeometry.Scheme.Modules.restrictFunctor
+          (f ⁻¹ᵁ U).ι).obj (carrier (p := p) X F) :=
+    ((AlgebraicGeometry.Scheme.Modules.restrictFunctorComp
+      hW.isoSpec.hom hW.isoSpec.inv).app
+        ((AlgebraicGeometry.Scheme.Modules.restrictFunctor
+          (f ⁻¹ᵁ U).ι).obj (carrier (p := p) X F))).symm ≪≫
+      (AlgebraicGeometry.Scheme.Modules.restrictFunctorCongr
+        hW.isoSpec.hom_inv_id).app
+          ((AlgebraicGeometry.Scheme.Modules.restrictFunctor
+            (f ⁻¹ᵁ U).ι).obj (carrier (p := p) X F)) ≪≫
+      (AlgebraicGeometry.Scheme.Modules.restrictFunctorId
+        (X := (f ⁻¹ᵁ U).toScheme)).app
+          ((AlgebraicGeometry.Scheme.Modules.restrictFunctor
+            (f ⁻¹ᵁ U).ι).obj (carrier (p := p) X F))
+  exact @SheafOfModules.Presentation.ofIsIso _ _ _ _ _ _ _ _
+    eBack.hom eBack.isIso_hom presBack
+
+/-- Pullback by absolute Frobenius preserves quasicoherent modules. -/
+noncomputable instance carrier_isQuasicoherent
+    (F : X.Modules) [F.IsQuasicoherent] :
+    (carrier (p := p) X F).IsQuasicoherent := by
+  let f := AlgebraicGeometry.Scheme.absoluteFrobenius (p := p) X
+  let W : X.affineOpens → X.Opens := fun U ↦ f ⁻¹ᵁ U.1
+  apply isQuasicoherent_of_restrictPresentation X
+    (carrier (p := p) X F) W
+  · exact TopologicalSpace.IsOpenCover.comap
+      (AlgebraicGeometry.iSup_affineOpens_eq_top X) f.base.hom
+  · intro U
+    exact restrictedCarrierPresentation X U.1 U.2 F
 
 end FrobeniusPullback
 
